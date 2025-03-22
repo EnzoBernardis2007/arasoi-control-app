@@ -23,6 +23,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "43e46914-a96e-4e34-bd76-5419f2f78ee0"
+      }
+    },
+    "owner": "enzobernardis"
   }
 }
