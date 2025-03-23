@@ -1,7 +1,10 @@
-import Screen from './screens/Screen.js';
+import StackNavigator from './navigation/StackNavigator.js'
+import { Provider } from './provider/Provider.js'
 
 export default function App() {
   return (
-    <Screen />
+    <Provider>
+      <StackNavigator />
+    </Provider>
   )
 }
