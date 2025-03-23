@@ -2,26 +2,31 @@ import React, { useState, useEffect } from 'react'
 import { View, Text, TextInput, StyleSheet } from 'react-native'
 
 export default function Search() {
-    const [searchBar, setSearchBar] = useState("")
+    const [searchBarChampionship, setSearchBarChampionship] = useState("")
+    const [searchBarBracket, setSearchBarBracket] = useState("")
     const [suggestedChampionship, setSuggestedChampionship] = useState(null)
+    const [suggestedBrackets, setSuggestedBrackets] = useState(null)
     const [debounceTimeout, setDebounceTimeout] = useState(null)
+    const [championshipId, setChampionshipId] = useState(null)
 
-    const handleSearchBar = (value) => {
-        setSearchBar(value)
+    const handleSearchBarChampionship = (value) => {
+        setSearchBarChampionship(value)
+    }
+
+    const handleSearchBarBracket = (value) => {
+        setSearchBarBracket(value)
     }
 
     useEffect(() => {
         if (debounceTimeout) {
-            clearTimeout(debounceTimeout);
+            clearTimeout(debounceTimeout)
         }
 
         const timeout = setTimeout(() => {
             const searchChampionship = async () => {
                 const response = await fetch('http://localhost:3000/getChampionships', {
                     method: 'GET',
-                    headers: {
-                        'Content-type': 'application/json'
-                    }
+                    headers: { 'Content-type': 'application/json' }
                 })
 
                 if(response.ok) {
@@ -31,47 +36,90 @@ export default function Search() {
                 }
             }
 
-            if (searchBar.trim() !== "") { 
+            if (searchBarChampionship.trim() !== "") { 
                 searchChampionship()
             } else {
                 setSuggestedChampionship(null)
             }
         }, 500)
 
-        setDebounceTimeout(timeout);
+        setDebounceTimeout(timeout)
 
         return () => {
             if (debounceTimeout) {
-                clearTimeout(debounceTimeout);
+                clearTimeout(debounceTimeout)
             }
         }
-    }, [searchBar])
+    }, [searchBarChampionship])
 
-    const sortChampionshipsByMatch = (championships) => {
-        return championships.sort((a, b) => {
-            const aMatch = a.name.toLowerCase().startsWith(searchBar.toLowerCase());
-            const bMatch = b.name.toLowerCase().startsWith(searchBar.toLowerCase());
+    useEffect(() => {
+        const getBrackets = async () => {
+            if(!championshipId) return
 
-            if (aMatch && !bMatch) return -1;
-            if (!aMatch && bMatch) return 1;
+            const response = await fetch(`http://localhost:3000/brackets/${championshipId}`, {
+                method: 'GET',
+                headers: { 'Content-type': 'application/json' }
+            })
 
-            return 0;
-        });
+            if(response.ok) {
+                const data = await response.json()
+                setSuggestedBrackets(data.brackets)
+                console.log(data.brackets)
+            }
+        }
+
+        getBrackets()
+    }, [championshipId])
+
+    const handleSelectChampionship = (id) => {
+        setChampionshipId(id)
+    }
+    
+    const sortByMatch = (list, searchTerm, key) => {
+        return list.sort((a, b) => {
+            const aMatch = a[key].toLowerCase().startsWith(searchTerm.toLowerCase())
+            const bMatch = b[key].toLowerCase().startsWith(searchTerm.toLowerCase())
+
+            if (aMatch && !bMatch) return -1
+            if (!aMatch && bMatch) return 1
+
+            return 0
+        })
     }
 
     return (
         <View style={style.body}>
-            <TextInput style={style.searchBar}
-            value={searchBar}
-            onChangeText={handleSearchBar}
-            placeholder="Digite aqui..."
+            <TextInput
+                style={style.searchBar}
+                value={searchBarChampionship}
+                onChangeText={handleSearchBarChampionship}
+                placeholder="Digite aqui..."
             />
-            { suggestedChampionship ? 
-                sortChampionshipsByMatch(suggestedChampionship.slice(0, 10))
+            {suggestedChampionship ? (
+                sortByMatch(suggestedChampionship.slice(0, 10), searchBarChampionship, "name")
                 .map((championship) => (
-                    <Text key={championship.id}>{championship.name}</Text>
-                )) : <Text>Digite algo...</Text>
-            }
+                    <Text key={championship.id} onPress={() => handleSelectChampionship(championship.id)}>
+                        {championship.name}
+                    </Text>
+                ))
+            ) : (
+                <Text>Digite algo...</Text>
+            )}
+
+            <TextInput
+                style={style.searchBar}
+                value={searchBarBracket}
+                onChangeText={handleSearchBarBracket}
+                placeholder="Digite aqui..."
+            />
+            {suggestedBrackets ? (
+                sortByMatch(suggestedBrackets.slice(0, 10), searchBarBracket, "athlete_aka_name")
+                .map((bracket) => (
+                    <Text key={bracket.bracket_id}>{bracket.athlete_aka_name}</Text>
+                ))
+            ) : (
+                <Text>Digite algo...</Text>
+            )}
         </View>
     )
 }
